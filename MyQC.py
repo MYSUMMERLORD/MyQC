@@ -85,32 +85,27 @@ def main():
     t = time.time()
     wlog("Step2：calculate samples expression value",logfile)
     if conf_dict['General']['expression_matrix'].rstrip() == "":
-        sample_detected_genes = calculate_expression(conf_dict,logfile)
-
-        #write sample sequence information
-        outfile = open('%sseq_information.txt'% conf_dict['General']['outputdirectory'],'w')
-        header = 'Sample.Name'+'\t'+'Total.Reads'+'\t'+'Mapped.Reads'+'\t'+'Mapped.Rate'+'\t'+'Reads.Complexity'+'\t'+'Gene.Detected'+'\n'
-        outfile.write(header)
-
-        cmd = 'ls' + '\t' + conf_dict['General']['expression'] + "*.genes.results"
-        a = commands.getstatusoutput(cmd)
-        Temp_Raw = a[1].split('\n')
-        sample_name_list = [i.split('/')[-1].split('.genes.results')[0] for i in Temp_Raw]
-        for i in range(len(sample_name_list)):
-            totalN, mappedN, mapping_rate, reads_complexity = calculate_total_reads('%s%s.sam' % (conf_dict['General']['sam'],sample_name_list[i]))
-            outfile.write(sample_name_list[i]+'\t')
-            #totalN = samples_info['samples_totalN'][i]
-            #mappedN = samples_info['samples_mappableN'][i]
-            #mapping_rate = samples_info['samples_mapping_rate'][i]
-            #reads_complexity = samples_info['samples_unique_reads'][i]
-            detected_genes = sample_detected_genes[i]
-            outfile.write(str(totalN)+'\t'+str(mappedN)+'\t'+str(mapping_rate)+'\t'+str(reads_complexity)+'\t'+str(detected_genes)+'\n')
-            print('The Current sample is %s'%sample_name_list[i])
-        outfile.close()
-        s2time = time.time() - t
+        sample_detected_genes = calculate_expression(conf_dict,logfile)   
         wlog("time for calculate expression value : %s" % (s2time), logfile)
-    wlog("Step2：calculate expression DONE", logfile)
+    wlog("Step2.1：calculate expression DONE", logfile)
+    #write sample sequence information
+    outfile = open('%sseq_information.txt'% conf_dict['General']['outputdirectory'],'w')
+    header = 'Sample.Name'+'\t'+'Total.Reads'+'\t'+'Mapped.Reads'+'\t'+'Mapped.Rate'+'\t'+'Reads.Complexity'+'\t'+'Gene.Detected'+'\n'
+    outfile.write(header)
 
+    cmd = 'ls' + '\t' + conf_dict['General']['expression'] + "*.genes.results"
+    a = commands.getstatusoutput(cmd)
+    Temp_Raw = a[1].split('\n')
+    sample_name_list = [i.split('/')[-1].split('.genes.results')[0] for i in Temp_Raw]
+    for i in range(len(sample_name_list)):
+        totalN, mappedN, mapping_rate, reads_complexity = calculate_total_reads('%s%s.sam' % (conf_dict['General']['sam'],sample_name_list[i]))
+        outfile.write(sample_name_list[i]+'\t')
+        detected_genes = sample_detected_genes[i]
+        outfile.write(str(totalN)+'\t'+str(mappedN)+'\t'+str(mapping_rate)+'\t'+str(reads_complexity)+'\t'+str(detected_genes)+'\n')
+        print('The Current sample is %s'%sample_name_list[i])
+    outfile.close()
+    s2time = time.time() - t
+    wlog("Step2.2：calculate sequence information DONE", logfile)
     #################### Step3：calculate distinct p_value ########################
     t = time.time()
     wlog('Step3：calculate distinct p_value',logfile)
