@@ -94,6 +94,23 @@ def read_conf(conf_file):
     for item in cf.items('General'):
         conf_dict['General'][item[0]] = item[1]
     return conf_dict
+def reverse(sequence):
+    result = ""
+    sequence = sequence[::-1]
+    for x in range(len(sequence)):
+        if sequence[x]=='N':
+            result += 'N'
+        elif sequence[x]=='A':
+            result += 'T'
+        elif sequence[x]=='T':
+            result += 'A'
+        elif sequence[x]=='G':
+            result += 'C'
+        elif sequence[x]=='C':
+            result += 'G'
+        else:
+            result
+    return result
 
 def calculate_total_reads(samplefile):
     inf = open(samplefile)
@@ -106,6 +123,7 @@ def calculate_total_reads(samplefile):
             continue
         ll = line.strip().split("\t")
         seq_name = ll[0]
+        flag = int(ll[1])
         chrom = ll[2]
         seq = ll[9]
         unique_reads[seq] = []
@@ -113,7 +131,22 @@ def calculate_total_reads(samplefile):
             totalN += 1
             if not chrom == '*':
                 mappableN += 1
-        last_seq = seq_name
+            ##detect right sequence
+            if flag>=16:
+                i = 11
+                while flag_arr[i] > flag:
+                    i -= 1
+                while flag >= flag_arr[i]:
+                    if flag_arr[i] == 16:
+                        seq = reverse(seq)
+                        break
+                    elif flag_arr[i] == flag and flag != 16:
+                        break
+                    else:
+                        flag -= flag_arr[i]
+                        i -= 1
+            last_seq = seq_name
+            unique_reads[seq] = []
     return totalN,mappableN,(int(mappableN)*1.0/totalN),len(unique_reads)
 
 

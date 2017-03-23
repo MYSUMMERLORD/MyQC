@@ -190,7 +190,7 @@ def main():
     wlog('Step7：Annotate artifact DONE',logfile)
 
     ############# Ploting PCA###################################
-    cmd = 'Rscript'+'\t'+script_path+'/PCA.R'+'\t'+conf_dict['General']['outputdirectory'] + 'expression_matrix.txt'+'\t'+conf_dict['General']['outputdirectory']+'MyQC_All_Samples_QC_information.txt'+'\t'+conf_dict['General']['outputdirectory']
+    #cmd = 'Rscript'+'\t'+script_path+'/PCA.R'+'\t'+conf_dict['General']['outputdirectory'] + 'expression_matrix.txt'+'\t'+conf_dict['General']['outputdirectory']+'MyQC_All_Samples_QC_information.txt'+'\t'+conf_dict['General']['outputdirectory']
     CMD(cmd)
 
     ################ Summary ##########################
