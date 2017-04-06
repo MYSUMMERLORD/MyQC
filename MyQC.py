@@ -75,8 +75,8 @@ def main():
     start_time = t
     ############## Step1：mapping #####################
     wlog("Step1：mapping",logfile)
-    #samples_info = mapping(conf_dict,logfile)
-    mapping(conf_dict, logfile)
+    samples_info = mapping(conf_dict,logfile)
+    #mapping(conf_dict, logfile)
     s1time = time.time() - t
     wlog("time for alignment : %s"%(s1time),logfile)
     wlog("Step1：alignment DONE",logfile)
@@ -85,35 +85,42 @@ def main():
     t = time.time()
     wlog("Step2：calculate samples expression value",logfile)
     if conf_dict['General']['expression_matrix'].rstrip() == "":
-        sample_detected_genes = calculate_expression(conf_dict,logfile)   
-        wlog("time for calculate expression value : %s" % (s2time), logfile)
-    wlog("Step2.1：calculate expression DONE", logfile)
-    #write sample sequence information
-    outfile = open('%sseq_information.txt'% conf_dict['General']['outputdirectory'],'w')
-    header = 'Sample.Name'+'\t'+'Total.Reads'+'\t'+'Mapped.Reads'+'\t'+'Mapped.Rate'+'\t'+'Reads.Complexity'+'\t'+'Gene.Detected'+'\n'
-    outfile.write(header)
+        sample_detected_genes = calculate_expression(conf_dict,logfile)
 
-    cmd = 'ls' + '\t' + conf_dict['General']['expression'] + "*.genes.results"
-    a = commands.getstatusoutput(cmd)
-    Temp_Raw = a[1].split('\n')
-    sample_name_list = [i.split('/')[-1].split('.genes.results')[0] for i in Temp_Raw]
-    for i in range(len(sample_name_list)):
-        totalN, mappedN, mapping_rate, reads_complexity = calculate_total_reads('%s%s.sam' % (conf_dict['General']['sam'],sample_name_list[i]))
-        outfile.write(sample_name_list[i]+'\t')
-        detected_genes = sample_detected_genes[i]
-        outfile.write(str(totalN)+'\t'+str(mappedN)+'\t'+str(mapping_rate)+'\t'+str(reads_complexity)+'\t'+str(detected_genes)+'\n')
-        print('The Current sample is %s'%sample_name_list[i])
-    outfile.close()
-    s2time = time.time() - t
-    wlog("Step2.2：calculate sequence information DONE", logfile)
+        #write sample sequence information
+        outfile = open('%sseq_information.txt'% conf_dict['General']['outputdirectory'],'w')
+        header = 'Sample.Name'+'\t'+'Total.Reads'+'\t'+'Mapped.Reads'+'\t'+'Mapped.Rate'+'\t'+'Reads.Complexity'+'\t'+'Gene.Detected'+'\n'
+        outfile.write(header)
+
+        cmd = 'ls' + '\t' + conf_dict['General']['expression'] + "*.genes.results"
+        a = commands.getstatusoutput(cmd)
+        Temp_Raw = a[1].split('\n')
+        sample_name_list = [i.split('/')[-1].split('.genes.results')[0] for i in Temp_Raw]
+        for i in range(len(sample_name_list)):
+            totalN, mappedN, mapping_rate, reads_complexity = calculate_total_reads('%s%s.sam' % (conf_dict['General']['sam'],sample_name_list[i]))
+            outfile.write(sample_name_list[i]+'\t')
+            #totalN = samples_info['samples_totalN'][i]
+            #mappedN = samples_info['samples_mappableN'][i]
+            #mapping_rate = samples_info['samples_mapping_rate'][i]
+            #reads_complexity = samples_info['samples_unique_reads'][i]
+            detected_genes = sample_detected_genes[i]
+            outfile.write(str(totalN)+'\t'+str(mappedN)+'\t'+str(mapping_rate)+'\t'+str(reads_complexity)+'\t'+str(detected_genes)+'\n')
+            print('The Current sample is %s'%sample_name_list[i])
+        outfile.close()
+        conf_dict['General']['expression_matrix'] = conf_dict['General']['outputdirectory']
+        s2time = time.time() - t
+        wlog("time for calculate expression value : %s" % (s2time), logfile)
+    wlog("Step2：calculate expression DONE", logfile)
+
     #################### Step3：calculate distinct p_value ########################
     t = time.time()
     wlog('Step3：calculate distinct p_value',logfile)
     if conf_dict['General']['pvalue_file'].rstrip() == "":
-        expression_matirx_file = conf_dict['General']['outputdirectory']+'expression_matrix.txt'
+        expression_matirx_file = conf_dict['General']['expression_matrix']+'expression_matrix.txt'
 
         cmd = 'Rscript'+'\t'+script_path+'/MI.R'+'\t'+expression_matirx_file+'\t'+conf_dict['General']['outputdirectory']
         CMD(cmd)
+        conf_dict['General']['pvalue_file'] = conf_dict['General']['outputdirectory']
         s3time = time.time() - t
         wlog("time for calculate distinct p_value : %s" % (s3time), logfile)
     wlog("Step3：calculate calculate distinct p_value DONE", logfile)
@@ -121,7 +128,6 @@ def main():
     ###################Step4: Calculate SeqQC quantile in all samples###############
     t = time.time()
     wlog('Step4：calculate SeqQC quantile in all samples',logfile)
-    print(conf_dict['General']['pvalue_file']+'seq_information.txt')
     cmd = 'Rscript'+'\t'+script_path+'/Calculate_Quantile_in_all_samples_update.R'+'\t'+conf_dict['General']['pvalue_file']+'Distinct_PValue.txt'+'\t'+conf_dict['General']['pvalue_mi_cutoff']+'\t'+conf_dict['General']['pvalue_pearson_cutoff']+'\t'+conf_dict['General']['pvalue_spearman_cutoff']+'\t'+conf_dict['General']['logical_tag']+'\t'+conf_dict['General']['pvalue_file']+'seq_information.txt'+'\t'+conf_dict['General']['outputdirectory']
     CMD(cmd)
     s4time = time.time() - t
@@ -185,7 +191,7 @@ def main():
     wlog('Step7：Annotate artifact DONE',logfile)
 
     ############# Ploting PCA###################################
-    #cmd = 'Rscript'+'\t'+script_path+'/PCA.R'+'\t'+conf_dict['General']['outputdirectory'] + 'expression_matrix.txt'+'\t'+conf_dict['General']['outputdirectory']+'MyQC_All_Samples_QC_information.txt'+'\t'+conf_dict['General']['outputdirectory']
+    cmd = 'Rscript'+'\t'+script_path+'/PCA.R'+'\t'+conf_dict['General']['expression_matrix'] + 'expression_matrix.txt'+'\t'+conf_dict['General']['outputdirectory']+'MyQC_All_Samples_QC_information.txt'+'\t'+conf_dict['General']['outputdirectory']
     CMD(cmd)
 
     ################ Summary ##########################

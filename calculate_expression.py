@@ -1,5 +1,6 @@
 import os
 import commands
+import time
 import subprocess
 ### tool function
 from Utility import (createDIR,
@@ -43,29 +44,38 @@ def calculate_expression(conf_dict, logfile):
                 createDIR(reference_dir)
                 ## check reference's exist
                 if not os.path.exists(conf_dict['General']['reference']):
-                    print('rsem reference doesnt exist')
+                    print('rsem reference does not exist')
                     return
                 cmd = "rsem-prepare-reference %s %srsem_ref" % (conf_dict['General']['reference'], reference_dir)
                 rwlog(cmd, logfile)
                 processes = set()
+                limit = int(conf_dict['General']['p'])
+                FNULL = open(os.devnull,'w')
                 if conf_dict['General']['type'] == "pe":
                     for i in range(len(Temp_Raw)):
-                        cmd = 'rsem-calculate-expression --paired-end --alignments %s %srsem_ref %s%s' %(Temp_Raw[i],reference_dir,conf_dict['General']['expression'],sample_name_list[i])
-                        # rplog(cmd,logfile)
-                        wlog(cmd, logfile)
-                        processes.add(subprocess.Popen(cmd, shell=True))
+                        cmd = 'rsem-calculate-expression -p 8 --paired-end --alignments %s %srsem_ref %s%s' %(Temp_Raw[i],reference_dir,conf_dict['General']['expression'],sample_name_list[i])
+                        while len(processes) == limit:
+                            time.sleep(2)
+                            for j in processes.copy():
+                                if j.poll() is not None:
+                                    print("finish one")
+                                    processes.remove(j)
+                        wlog(cmd,logfile)
+                        processes.add(subprocess.Popen(cmd,shell=True,stdout=FNULL,stderr=subprocess.STDOUT))
                 else:
                     for i in range(len(Temp_Raw)):
-                        cmd = 'rsem-calculate-expression --alignments %s %srsem_ref %s%s' %(Temp_Raw[i],reference_dir,conf_dict['General']['expression'],sample_name_list[i])
-                        #rplog(cmd,logfile)
-                        wlog(cmd, logfile)
-                        processes.add(subprocess.Popen(cmd,shell=True))
-                count = 0
+                        cmd = 'rsem-calculate-expression -p 8 --alignments %s %srsem_ref %s%s' %(Temp_Raw[i],reference_dir,conf_dict['General']['expression'],sample_name_list[i])
+                        while len(processes) == limit:
+                            time.sleep(2)
+                            for i in processes.copy():
+                                if i.poll() is not None:
+                                    print("finish one")
+                                    processes.remove(i)
+                        wlog(cmd,logfile)
+                        processes.add(subprocess.Popen(cmd,shell=True,stdout=FNULL,stderr=subprocess.STDOUT))
                 for p in processes:
-                    count += 1
                     if p.poll() is None:
                         p.wait()
-                        print('**************** %s ******************' % count)
 
         else:
             ewlog('quantative tools can only be rsem', logfile)

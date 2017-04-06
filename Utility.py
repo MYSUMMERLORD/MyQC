@@ -118,6 +118,7 @@ def calculate_total_reads(samplefile):
     last_seq = ""
     mappableN = 0
     unique_reads = {}
+    flag_arr = [1,2,4,8,16,32,64,128,256,512,1024,2048]
     for line in inf:
         if line.startswith("@"):
             continue
@@ -147,7 +148,7 @@ def calculate_total_reads(samplefile):
                         i -= 1
             last_seq = seq_name
             unique_reads[seq] = []
-    return totalN,mappableN,(int(mappableN)*1.0/totalN),len(unique_reads)
+    return totalN,mappableN,(int(mappableN)*1.0/totalN),(len(unique_reads)*1.0/totalN)
 
 
 

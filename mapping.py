@@ -1,5 +1,7 @@
 import os
 import commands
+import time
+import subprocess
 
 ### tool function
 from Utility import (calculate_total_reads,
@@ -58,43 +60,77 @@ def mapping(conf_dict,logfile):
         sample_name_list = []
         if conf_dict['General']['type'] == "pe":
             for k in Check_Raw_List:
-                sample_name = k.split('_')[0]
+                sample_name = k[:-2]
                 if flag == 0:
                     sample_name_list.append(sample_name)
                     flag = 1
                 else:
                     flag = 0
             Check_Raw_List = sample_name_list
+        print("--------------------------------")
+        print(len(Check_Raw_List))
         ## choose mapping tool from  bowtie2 according to config file
         if conf_dict['General']['mapping_software_main'] == "bowtie":
             wlog('user choose bowtie as alignment software', logfile)
             if sp('which bowtie')[0].strip() == "":
                 ewlog('bowtie is not detected in default PATH, make sure you installed bowtie and export it into default PATH',logfile)
             wlog('build the reference', logfile)
-
+            processes = set()
+            limit = int(conf_dict['General']['p'])
             if conf_dict['General']['format'] == "fa" or conf_dict['General']['format'] == "fasta":
                 if conf_dict['General']['type'] == "pe":
                     for k in Check_Raw_List:
-                        mapping_cmd = 'bowtie -a -m 200 -v 2 %s -f -1 %s%s_1.%s -2 %s%s_2.%s -S %s.sam' % (
+                        mapping_cmd = 'bowtie -a -m 200 -v 2 %s -f -1 %s%s_1.%s -2 %s%s_2.%s -S %s.sam -p 8' % (
                         conf_dict['General']['mapindex'], conf_dict['General']['samples_file'], k,
                         conf_dict['General']['format'], conf_dict['General']['samples_file'], k,
                         conf_dict['General']['format'], k)
-                        rplog(mapping_cmd, logfile)
+                        while len(processes) == limit:
+                            time.sleep(2)
+                            for i in processes.copy():
+                                if i.poll() is not None:
+                                    print("finish one")
+                                    processes.remove(i)
+                        wlog(mapping_cmd,logfile)
+                        processes.add(subprocess.Popen(mapping_cmd,shell=True))
                 else:
                     for k in Check_Raw_List:
-                        mapping_cmd = 'bowtie -a -m 200 -v 2 %s -f %s%s.%s -S %s.sam' % (
+                        mapping_cmd = 'bowtie -a -m 200 -v 2 %s -f %s%s.%s -S %s.sam -p 8' % (
                         conf_dict['General']['mapindex'], conf_dict['General']['samples_file'], k,
                         conf_dict['General']['format'], k)
-                        rplog(mapping_cmd, logfile)
+                        while len(processes) == limit:
+                            time.sleep(2)
+                            for i in processes.copy():
+                                if i.poll() is not None:
+                                    print("finish one")
+                                    processes.remove(i)
+                        wlog(mapping_cmd,logfile)
+                        processes.add(subprocess.Popen(mapping_cmd,shell=True))
             else:
                 if conf_dict['General']['type'] == "pe":
                     for k in Check_Raw_List:
-                        mapping_cmd = 'bowtie -a -m 200 -v 2 %s -1 %s%s_1.%s -2 %s%s_2.%s -S %s.sam' %(conf_dict['General']['mapindex'],conf_dict['General']['samples_file'],k,conf_dict['General']['format'],conf_dict['General']['samples_file'],k,conf_dict['General']['format'],k)
-                        rplog(mapping_cmd,logfile)
+                        mapping_cmd = 'bowtie -a -m 200 -v 2 %s -1 %s%s_1.%s -2 %s%s_2.%s -S %s.sam -p 8' %(conf_dict['General']['mapindex'],conf_dict['General']['samples_file'],k,conf_dict['General']['format'],conf_dict['General']['samples_file'],k,conf_dict['General']['format'],k)
+                        while len(processes) == limit:
+                            time.sleep(2)
+                            for i in processes.copy():
+                                if i.poll() is not None:
+                                    print("finish one")
+                                    processes.remove(i)
+                        wlog(mapping_cmd,logfile)
+                        processes.add(subprocess.Popen(mapping_cmd,shell=True))
                 else:
                     for k in Check_Raw_List:
-                        mapping_cmd = 'bowtie -a -m 200 -v 2 %s %s%s.%s -S %s.sam' %(conf_dict['General']['mapindex'],conf_dict['General']['samples_file'],k,conf_dict['General']['format'],k)
-                        rplog(mapping_cmd,logfile)
+                        mapping_cmd = 'bowtie -a -m 200 -v 2 %s %s%s.%s -S %s.sam -p 8' %(conf_dict['General']['mapindex'],conf_dict['General']['samples_file'],k,conf_dict['General']['format'],k)
+                        while len(processes) == limit:
+                            time.sleep(2)
+                            for i in processes.copy():
+                                if i.poll() is not None:
+                                    print("finish one")
+                                    processes.remove(i)
+                        wlog(mapping_cmd,logfile)
+                        processes.add(subprocess.Popen(mapping_cmd,shell=True))
+            for p in processes:
+                if p.poll() is None:
+                    p.wait()
             conf_dict['General']['sam'] = mapping_dir
         else:
             ewlog('alignment tools can only be bowtie',logfile)
